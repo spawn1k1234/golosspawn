@@ -1,0 +1,117 @@
+.blob-background {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  background: black;
+}
+
+.blob {
+  position: absolute;
+  width: 50vmax;
+  height: 50vmax;
+  background: radial-gradient(circle at 30% 30%, #ff6, #f06);
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: blobMotion 16s infinite ease-in-out alternate;
+  mix-blend-mode: screen;
+}
+
+.blob1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.blob2 {
+  top: 60%;
+  left: 50%;
+  animation-delay: 4s;
+}
+
+.blob3 {
+  top: 30%;
+  left: 70%;
+  animation-delay: 8s;
+}
+
+@keyframes blobMotion {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(20%, -10%) scale(1.15) rotate(20deg);
+  }
+  100% {
+    transform: translate(-10%, 20%) scale(1) rotate(-15deg);
+  }
+}
+
+/* Медиазапросы для адаптивности */
+
+@media (max-width: 1024px) {
+  .blob {
+    width: 40vmax;
+    height: 40vmax;
+  }
+
+  .blob1 {
+    top: 15%;
+    left: 5%;
+  }
+
+  .blob2 {
+    top: 50%;
+    left: 45%;
+  }
+
+  .blob3 {
+    top: 25%;
+    left: 65%;
+  }
+}
+
+@media (max-width: 768px) {
+  .blob {
+    width: 30vmax;
+    height: 30vmax;
+  }
+
+  .blob1 {
+    top: 10%;
+    left: 5%;
+  }
+
+  .blob2 {
+    top: 40%;
+    left: 50%;
+  }
+
+  .blob3 {
+    top: 20%;
+    left: 70%;
+  }
+}
+
+@media (max-width: 480px) {
+  .blob {
+    width: 25vmax;
+    height: 25vmax;
+  }
+
+  .blob1 {
+    top: 5%;
+    left: 5%;
+  }
+
+  .blob2 {
+    top: 35%;
+    left: 50%;
+  }
+
+  .blob3 {
+    top: 15%;
+    left: 65%;
+  }
+}
